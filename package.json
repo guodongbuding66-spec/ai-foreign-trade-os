@@ -1,0 +1,8 @@
+{
+  "name": "ai-foreign-trade-os",
+  "version": "1.0.0-dev",
+  "private": true,
+  "scripts": {
+    "check": "node --check assets/app.js && node --check functions/api/health.js && node --check functions/api/runtime.js && node tests/smoke.mjs"
+  }
+}
