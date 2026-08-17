@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#101827" />
+  <title>AI Foreign Trade OS · AI外贸全能工作台</title>
+  <meta name="description" content="AI外贸全能工作台 V1.0 开发基线" />
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark">FT</div>
+        <div>
+          <strong>AI Foreign Trade OS</strong>
+          <span>外贸全能工作台 · V1.0</span>
+        </div>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-foot">
+        <div class="env-badge"><span class="dot"></span> Development baseline</div>
+        <small>PRD 2026-08-17</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn mobile-only" id="menuToggle" aria-label="切换菜单">☰</button>
+        <div class="global-search-wrap">
+          <input id="globalSearch" class="global-search" placeholder="搜索 Company / Contact / Product / SKU / Quote / Order…" autocomplete="off" />
+          <kbd>Ctrl K</kbd>
+          <div id="searchResults" class="search-results hidden"></div>
+        </div>
+        <div class="top-actions">
+          <button class="btn secondary" id="createBtn">＋ Create</button>
+          <button class="btn primary" id="aiBtn">✦ AI</button>
+          <button class="icon-btn" id="notifyBtn" title="Notifications">●</button>
+          <button class="avatar" id="userBtn" title="Workspace">GD</button>
+        </div>
+      </header>
+
+      <section id="content" class="content" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
