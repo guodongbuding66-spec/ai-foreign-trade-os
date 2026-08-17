@@ -1,1 +1,59 @@
-# ai-foreign-trade-os
+# AI Foreign Trade OS
+
+**AI外贸全能工作台 V1.0 / Foreign Trade AI**
+
+本仓库以用户提供的完整《AI外贸全能工作台 V1.0 产品需求文档》为开发与验收基线。`docs/AI外贸全能工作台 V1.0 产品需求文档.md` 保存本次可部署开发基线摘要；完整原始 PRD 仍作为后续开发的最高规范。
+
+## 当前交付定位
+
+这是 **M0/M1 可部署开发基线**，不是宣称全部第三方 Provider 已上线的最终生产版。
+
+已实现并可实际操作：
+
+- 响应式应用壳、菜单、全局搜索、Create 快捷入口
+- Dashboard：从本地业务数据实时计算 KPI
+- CRM Companies：新增 / 编辑 / 删除 / 搜索
+- Product / SKU / Packaging：支持 **1套N箱** 动态包装结构
+- Quote Calculator：成本、利润率、报价金额计算并保存版本基线
+- Container Planner：基于包装实例的约束感知三维轴对齐贪心装载，输出 Top / Front / Right 正交视图、CBM/重量利用率、未装箱数量与 JSON
+- Automation：本地规则可创建、启停和执行内置动作
+- Pages Functions：`/api/health`、`/api/runtime`
+- Cloudflare Pages SPA 路由与安全响应头
+- D1 核心表初始化迁移草案
+
+尚未宣称完成：
+
+- OpenAI / Apollo / Hunter / Google Places / WhatsApp / DeepL / DHL / FedEx 等真实 Provider
+- 生产级登录、Tenant、RBAC、服务端审计、正式数据库绑定
+- 完整 3D WebGL 手工拖拽装柜器
+- 正式 PDF/Excel 单证和装柜报告生成
+
+这些能力在界面中会显示为“需要服务器 Provider / Binding”，不会伪装成已经完成。
+
+## Cloudflare Pages
+
+静态部署无需构建命令：
+
+- Build command: 留空
+- Build output directory: `/`
+- Root directory: `/`
+- Production branch: `main`
+
+Pages Functions 位于 `functions/`。
+
+## Validation
+
+```bash
+npm run check
+```
+
+当前 smoke test 使用 PRD 指定包装：
+
+- 128 × 54 × 13 cm / 49 kg
+- 128 × 54 × 11 cm / 49 kg
+
+20 套共 40 箱，预期 `40 placed / 0 unloaded`，并校验无越界与无重叠。
+
+## 开发原则
+
+遵守 PRD Definition of Done：只有 UI 不算完成；功能必须逐步补齐 API、DB、校验、Loading、Empty、Error、权限、审计、移动端与测试。
