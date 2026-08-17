@@ -32,14 +32,15 @@
 
 ## Cloudflare Pages
 
-静态部署无需构建命令：
+本项目仓库根目录就是静态站点目录，并包含 `functions/` Pages Functions：
 
-- Build command: 留空
-- Build output directory: `/`
-- Root directory: `/`
+- Framework preset: `None`
+- Build command: `exit 0`
+- Build output directory: `.`
+- Root directory: 留空（使用仓库根目录）
 - Production branch: `main`
 
-Pages Functions 位于 `functions/`。
+Cloudflare Pages Functions 位于 `functions/`。
 
 ## Validation
 
