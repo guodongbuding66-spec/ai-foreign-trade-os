@@ -4,6 +4,9 @@ const EXPECTED_TABLES = [
   'roles',
   'users',
   'user_roles',
+  'user_credentials',
+  'sessions',
+  'auth_attempts',
   'settings',
   'companies',
   'contacts',
@@ -24,6 +27,9 @@ const EXPECTED_TABLES = [
 ];
 
 const COUNT_TABLES = [
+  'tenants',
+  'users',
+  'sessions',
   'companies',
   'contacts',
   'leads',
@@ -88,9 +94,9 @@ export async function onRequestGet(context) {
         ok: true,
         bound: true,
         binding: 'DB',
-        schemaReady: missingTables.length === 0,
+        schemaReady: missingTables.length === 0 && String(schemaVersion) === '3',
         schemaVersion,
-        expectedSchemaVersion: '2',
+        expectedSchemaVersion: '3',
         tables,
         missingTables,
         counts
