@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#101827" />
   <title>AI Foreign Trade OS · AI外贸全能工作台</title>
-  <meta name="description" content="AI外贸全能工作台 V1.0 开发基线" />
+  <meta name="description" content="AI外贸全能工作台 V1.0" />
   <link rel="stylesheet" href="/assets/app.css" />
 </head>
 <body>
@@ -21,8 +21,8 @@
       </div>
       <nav id="nav" class="nav"></nav>
       <div class="sidebar-foot">
-        <div class="env-badge"><span class="dot"></span> Development baseline</div>
-        <small>PRD 2026-08-17</small>
+        <div class="env-badge"><span class="dot"></span> Production workspace</div>
+        <small>D1 + Tenant + RBAC</small>
       </div>
     </aside>
 
@@ -42,12 +42,14 @@
         </div>
       </header>
 
-      <section id="content" class="content" aria-live="polite"></section>
+      <section id="content" class="content" aria-live="polite">
+        <div class="card"><h2>Loading workspace…</h2><div class="notice info">正在验证 Session 并同步 D1 主数据。</div></div>
+      </section>
     </main>
   </div>
 
   <div id="modalRoot"></div>
   <div id="toastRoot" class="toast-root"></div>
-  <script src="/assets/app.js" defer></script>
+  <script src="/assets/workspace-loader.js" defer></script>
 </body>
 </html>
