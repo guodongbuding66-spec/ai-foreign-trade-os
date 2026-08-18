@@ -1,0 +1,1 @@
+Auth foundation review checkpoint: PBKDF2-SHA256 password hashing, hashed server-side sessions, same-origin POST protection, login rate limiting, tenant/RBAC lookup, and audit logging reviewed before production merge.
