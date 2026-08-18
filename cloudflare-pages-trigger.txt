@@ -1,0 +1,6 @@
+Cloudflare Pages deployment trigger for AI Foreign Trade OS.
+Triggered after Git integration was bound on 2026-08-18.
+Production branch: main
+Expected project name: ai-foreign-trade-os
+Build command: exit 0
+Build output directory: .
