@@ -16,7 +16,9 @@
     invalid_tenant_name: 'Workspace 名称不正确。',
     password_too_short: '密码至少需要 12 位。',
     password_too_long: '密码过长。',
-    invalid_origin: '请求来源校验失败，请从本站 setup.html 操作。'
+    invalid_origin: '请求来源校验失败，请从本站 setup.html 操作。',
+    bootstrap_runtime_error: 'Bootstrap 服务端执行失败。',
+    bootstrap_failed: 'D1 初始化写入失败。'
   };
 
   function show(text, type = '') {
@@ -24,10 +26,21 @@
     status.className = `status ${type}`.trim();
   }
 
+  async function responseJson(r) {
+    const type = (r.headers.get('content-type') || '').toLowerCase();
+    const text = await r.text();
+    if (type.includes('application/json')) {
+      try { return JSON.parse(text); }
+      catch (_) { throw new Error(`http_${r.status}_invalid_json`); }
+    }
+    const snippet = text.replace(/\s+/g, ' ').slice(0, 100);
+    throw new Error(`http_${r.status}${snippet ? `: ${snippet}` : ''}`);
+  }
+
   async function refreshStatus() {
     try {
       const r = await fetch('/api/auth/status', { cache: 'no-store' });
-      const j = await r.json();
+      const j = await responseJson(r);
       if (!j.dbBound) return show('D1 DB 尚未绑定到 Pages Production。', 'bad');
       if (!j.authSchemaReady) return show(`当前 schema v${j.schemaVersion || '?'}；请先执行 migrations/0003_auth.sql。`, 'bad');
       if (j.hasUsers) {
@@ -42,8 +55,8 @@
       }
       form.classList.remove('hidden');
       show('D1、Auth schema 与 Secrets 已就绪，可以创建第一个 Workspace Owner。', 'ok');
-    } catch (_) {
-      show('无法读取 /api/auth/status，请确认最新 Production 部署成功。', 'bad');
+    } catch (error) {
+      show(`无法读取 /api/auth/status：${error.message}`, 'bad');
     }
   }
 
@@ -63,13 +76,20 @@
           bootstrapToken: $('#bootstrapToken').value
         })
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'bootstrap_failed');
+      const j = await responseJson(r);
+      if (!r.ok) {
+        const err = new Error(j.error || `http_${r.status}`);
+        err.detail = j.detail;
+        throw err;
+      }
+      $('#password').value = '';
+      $('#bootstrapToken').value = '';
       form.classList.add('hidden');
       show(`初始化成功：${j.tenant.name} / ${j.user.email}。正在进入登录页…`, 'ok');
       setTimeout(() => location.href = '/login.html?created=1', 1000);
     } catch (error) {
-      show(messages[error.message] || `初始化失败：${error.message}`, 'bad');
+      const base = messages[error.message] || `初始化失败：${error.message}`;
+      show(error.detail ? `${base} ${error.detail}` : base, 'bad');
       button.disabled = false;
     }
   });
