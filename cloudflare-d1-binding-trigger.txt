@@ -1,0 +1,3 @@
+Cloudflare D1 binding deployment trigger
+Binding: DB -> ai-foreign-trade-os-production
+Date: 2026-08-18
