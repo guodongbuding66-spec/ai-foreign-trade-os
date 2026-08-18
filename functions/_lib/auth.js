@@ -204,7 +204,13 @@ export async function getAuth(context) {
 }
 
 export function can(auth, permission) {
-  return Boolean(auth && (auth.permissions.includes('*') || auth.permissions.includes(permission)));
+  if (!auth) return false;
+  const grants = Array.isArray(auth.permissions) ? auth.permissions : [];
+  if (grants.includes('*') || grants.includes(permission)) return true;
+  return grants.some(grant => {
+    if (typeof grant !== 'string' || !grant.endsWith('*') || grant === '*') return false;
+    return permission.startsWith(grant.slice(0, -1));
+  });
 }
 
 export async function requireAuth(context, permission = null) {
