@@ -14,42 +14,23 @@
     <aside class="sidebar" id="sidebar" aria-label="主导航">
       <div class="brand">
         <div class="brand-mark">FT</div>
-        <div>
-          <strong>AI Foreign Trade OS</strong>
-          <span>外贸全能工作台 · V1.0</span>
-        </div>
+        <div><strong>AI Foreign Trade OS</strong><span>外贸全能工作台 · V1.0</span></div>
       </div>
       <nav id="nav" class="nav"></nav>
-      <div class="sidebar-foot">
-        <div class="env-badge"><span class="dot"></span> Production workspace</div>
-        <small>D1 + Tenant + RBAC</small>
-      </div>
+      <div class="sidebar-foot"><div class="env-badge"><span class="dot"></span> Production workspace</div><small>D1 + Tenant + RBAC</small></div>
     </aside>
-
     <main class="main">
       <header class="topbar">
         <button class="icon-btn mobile-only" id="menuToggle" aria-label="切换菜单">☰</button>
-        <div class="global-search-wrap">
-          <input id="globalSearch" class="global-search" placeholder="搜索 Company / Contact / Product / SKU / Quote / Order…" autocomplete="off" />
-          <kbd>Ctrl K</kbd>
-          <div id="searchResults" class="search-results hidden"></div>
-        </div>
-        <div class="top-actions">
-          <button class="btn secondary" id="createBtn">＋ Create</button>
-          <button class="btn primary" id="aiBtn">✦ AI</button>
-          <button class="icon-btn" id="notifyBtn" title="Notifications">●</button>
-          <button class="avatar" id="userBtn" title="Workspace">GD</button>
-        </div>
+        <div class="global-search-wrap"><input id="globalSearch" class="global-search" placeholder="搜索 Company / Contact / Product / SKU / Quote / Order…" autocomplete="off" /><kbd>Ctrl K</kbd><div id="searchResults" class="search-results hidden"></div></div>
+        <div class="top-actions"><button class="btn secondary" id="createBtn">＋ Create</button><button class="btn primary" id="aiBtn">✦ AI</button><button class="icon-btn" id="notifyBtn" title="Notifications">●</button><button class="avatar" id="userBtn" title="Workspace">GD</button></div>
       </header>
-
-      <section id="content" class="content" aria-live="polite">
-        <div class="card"><h2>Loading workspace…</h2><div class="notice info">正在验证 Session 并同步 D1 主数据。</div></div>
-      </section>
+      <section id="content" class="content" aria-live="polite"><div class="card"><h2>Loading workspace…</h2><div class="notice info">正在验证 Session 并同步 D1 主数据。</div></div></section>
     </main>
   </div>
-
   <div id="modalRoot"></div>
   <div id="toastRoot" class="toast-root"></div>
   <script src="/assets/workspace-loader.js" defer></script>
+  <script src="/assets/d1-workflow-ui.js" defer></script>
 </body>
 </html>
