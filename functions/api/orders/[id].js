@@ -1,19 +1,99 @@
 import { assertSameOrigin, audit, json, readJson, requireAuth } from '../../_lib/auth.js';
 import { clean, commercialSchemaError, normalizeOrder, num } from '../../_lib/commercialdata.js';
 
-async function getOrder(DB,tenantId,id){const row=await DB.prepare(`SELECT o.*,c.legal_name AS company_name,u.display_name AS owner_display_name FROM orders o JOIN companies c ON c.id=o.company_id AND c.tenant_id=o.tenant_id LEFT JOIN users u ON u.id=o.owner_user_id AND u.tenant_id=o.tenant_id WHERE o.tenant_id=? AND o.id=? LIMIT 1`).bind(tenantId,id).first();if(!row)return null;const r=await DB.prepare(`SELECT oi.*,s.code AS sku_code FROM order_items oi LEFT JOIN skus s ON s.id=oi.sku_id AND s.tenant_id=oi.tenant_id WHERE oi.tenant_id=? AND oi.order_id=? ORDER BY oi.created_at`).bind(tenantId,id).all();return normalizeOrder(row,r.results||[])}
-
-export async function onRequestGet(context){const {response,auth}=await requireAuth(context,'orders.read');if(response)return response;try{const order=await getOrder(context.env.DB,auth.tenant.id,String(context.params?.id||''));return order?json({ok:true,order}):json({ok:false,error:'order_not_found'},404)}catch(error){const s=commercialSchemaError(error);return json(s,s.error==='commercial_schema_not_ready'?503:500)}}
-
-export async function onRequestPut(context){
-  const originError=assertSameOrigin(context.request);if(originError)return originError;const {response,auth}=await requireAuth(context,'orders.write');if(response)return response;
-  const id=String(context.params?.id||'').slice(0,120),tenantId=auth.tenant.id;let body;try{body=await readJson(context.request)}catch{return json({ok:false,error:'invalid_json'},400)}
-  try{const before=await getOrder(context.env.DB,tenantId,id);if(!before)return json({ok:false,error:'order_not_found'},404);const now=new Date().toISOString(),deposit=Math.max(0,num(body?.deposit??before.deposit)),amount=Math.max(0,num(body?.amount??before.amount)),balance=Math.max(0,num(body?.balance??(amount-deposit)));
-    await context.env.DB.prepare(`UPDATE orders SET po_number=?,incoterm=?,port=?,payment_terms=?,deposit=?,balance=?,amount=?,production_date=?,etd=?,eta=?,status=?,updated_at=? WHERE id=? AND tenant_id=?`).bind(clean(body?.poNumber??before.poNumber,120)||null,clean(body?.incoterm??before.incoterm,20)||null,clean(body?.port??before.port,120)||null,clean(body?.paymentTerms??before.paymentTerms,240)||null,deposit,balance,amount,clean(body?.productionDate??before.productionDate,20)||null,clean(body?.etd??before.etd,20)||null,clean(body?.eta??before.eta,20)||null,clean(body?.status??before.status,40)||'Draft',now,id,tenantId).run();const after=await getOrder(context.env.DB,tenantId,id);await audit(context,{tenantId,userId:auth.user.id},'order.update','order',id,before,after);return json({ok:true,order:after})
-  }catch(error){const s=commercialSchemaError(error);return json(s,s.error==='commercial_schema_not_ready'?503:500)}}
+async function getOrder(DB, tenantId, id) {
+  const row = await DB.prepare(`SELECT o.*,c.legal_name AS company_name,u.display_name AS owner_display_name FROM orders o JOIN companies c ON c.id=o.company_id AND c.tenant_id=o.tenant_id LEFT JOIN users u ON u.id=o.owner_user_id AND u.tenant_id=o.tenant_id WHERE o.tenant_id=? AND o.id=? LIMIT 1`).bind(tenantId, id).first();
+  if (!row) return null;
+  const r = await DB.prepare(`SELECT oi.*,s.code AS sku_code FROM order_items oi LEFT JOIN skus s ON s.id=oi.sku_id AND s.tenant_id=oi.tenant_id WHERE oi.tenant_id=? AND oi.order_id=? ORDER BY oi.created_at`).bind(tenantId, id).all();
+  return normalizeOrder(row, r.results || []);
 }
 
-export async function onRequestDelete(context){
-  const originError=assertSameOrigin(context.request);if(originError)return originError;const {response,auth}=await requireAuth(context,'orders.write');if(response)return response;const id=String(context.params?.id||'').slice(0,120),tenantId=auth.tenant.id;
-  try{const before=await getOrder(context.env.DB,tenantId,id);if(!before)return json({ok:false,error:'order_not_found'},404);const refs=await context.env.DB.batch([context.env.DB.prepare('SELECT COUNT(*) AS count FROM documents WHERE tenant_id=? AND order_id=?').bind(tenantId,id),context.env.DB.prepare('SELECT COUNT(*) AS count FROM shipments WHERE tenant_id=? AND order_id=?').bind(tenantId,id)]);const docCount=Number(refs[0]?.results?.[0]?.count||0),shipCount=Number(refs[1]?.results?.[0]?.count||0);if(docCount||shipCount)return json({ok:false,error:'order_has_references',documents:docCount,shipments:shipCount},409);await context.env.DB.prepare('DELETE FROM orders WHERE id=? AND tenant_id=?').bind(id,tenantId).run();await audit(context,{tenantId,userId:auth.user.id},'order.delete','order',id,before,null);return json({ok:true})}catch(error){const s=commercialSchemaError(error);return json(s,s.error==='commercial_schema_not_ready'?503:500)}}
+export async function onRequestGet(context) {
+  const { response, auth } = await requireAuth(context, 'orders.read');
+  if (response) return response;
+  try {
+    const order = await getOrder(context.env.DB, auth.tenant.id, String(context.params?.id || ''));
+    return order ? json({ ok: true, order }) : json({ ok: false, error: 'order_not_found' }, 404);
+  } catch (error) {
+    const s = commercialSchemaError(error);
+    return json(s, s.error === 'commercial_schema_not_ready' ? 503 : 500);
+  }
+}
+
+export async function onRequestPut(context) {
+  const originError = assertSameOrigin(context.request);
+  if (originError) return originError;
+  const { response, auth } = await requireAuth(context, 'orders.write');
+  if (response) return response;
+
+  const id = String(context.params?.id || '').slice(0, 120);
+  const tenantId = auth.tenant.id;
+  let body;
+  try {
+    body = await readJson(context.request);
+  } catch {
+    return json({ ok: false, error: 'invalid_json' }, 400);
+  }
+
+  try {
+    const before = await getOrder(context.env.DB, tenantId, id);
+    if (!before) return json({ ok: false, error: 'order_not_found' }, 404);
+    const now = new Date().toISOString();
+    const deposit = Math.max(0, num(body?.deposit ?? before.deposit));
+    const amount = Math.max(0, num(body?.amount ?? before.amount));
+    const balance = Math.max(0, num(body?.balance ?? (amount - deposit)));
+
+    await context.env.DB.prepare(`UPDATE orders SET po_number=?,incoterm=?,port=?,payment_terms=?,deposit=?,balance=?,amount=?,production_date=?,etd=?,eta=?,status=?,updated_at=? WHERE id=? AND tenant_id=?`).bind(
+      clean(body?.poNumber ?? before.poNumber, 120) || null,
+      clean(body?.incoterm ?? before.incoterm, 20) || null,
+      clean(body?.port ?? before.port, 120) || null,
+      clean(body?.paymentTerms ?? before.paymentTerms, 240) || null,
+      deposit,
+      balance,
+      amount,
+      clean(body?.productionDate ?? before.productionDate, 20) || null,
+      clean(body?.etd ?? before.etd, 20) || null,
+      clean(body?.eta ?? before.eta, 20) || null,
+      clean(body?.status ?? before.status, 40) || 'Draft',
+      now,
+      id,
+      tenantId
+    ).run();
+
+    const after = await getOrder(context.env.DB, tenantId, id);
+    await audit(context, { tenantId, userId: auth.user.id }, 'order.update', 'order', id, before, after);
+    return json({ ok: true, order: after });
+  } catch (error) {
+    const s = commercialSchemaError(error);
+    return json(s, s.error === 'commercial_schema_not_ready' ? 503 : 500);
+  }
+}
+
+export async function onRequestDelete(context) {
+  const originError = assertSameOrigin(context.request);
+  if (originError) return originError;
+  const { response, auth } = await requireAuth(context, 'orders.write');
+  if (response) return response;
+
+  const id = String(context.params?.id || '').slice(0, 120);
+  const tenantId = auth.tenant.id;
+  try {
+    const before = await getOrder(context.env.DB, tenantId, id);
+    if (!before) return json({ ok: false, error: 'order_not_found' }, 404);
+
+    const refs = await context.env.DB.batch([
+      context.env.DB.prepare('SELECT COUNT(*) AS count FROM documents WHERE tenant_id=? AND order_id=?').bind(tenantId, id),
+      context.env.DB.prepare('SELECT COUNT(*) AS count FROM shipments WHERE tenant_id=? AND order_id=?').bind(tenantId, id)
+    ]);
+    const docCount = Number(refs[0]?.results?.[0]?.count || 0);
+    const shipCount = Number(refs[1]?.results?.[0]?.count || 0);
+    if (docCount || shipCount) return json({ ok: false, error: 'order_has_references', documents: docCount, shipments: shipCount }, 409);
+
+    await context.env.DB.prepare('DELETE FROM orders WHERE id=? AND tenant_id=?').bind(id, tenantId).run();
+    await audit(context, { tenantId, userId: auth.user.id }, 'order.delete', 'order', id, before, null);
+    return json({ ok: true });
+  } catch (error) {
+    const s = commercialSchemaError(error);
+    return json(s, s.error === 'commercial_schema_not_ready' ? 503 : 500);
+  }
 }
