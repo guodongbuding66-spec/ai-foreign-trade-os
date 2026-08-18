@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>登录 · AI外贸全能工作台</title>
+  <link rel="stylesheet" href="/assets/auth.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <div class="mark">AI</div>
+      <h1>AI外贸全能工作台</h1>
+      <p>登录后由服务端 Session 确认 User、Tenant、Roles 与 Permissions。密码和 Session Token 不写入浏览器 localStorage。</p>
+      <ul>
+        <li>✓ Tenant isolation</li>
+        <li>✓ Role-based access control</li>
+        <li>✓ Secure HttpOnly session cookie</li>
+        <li>✓ Login audit trail</li>
+      </ul>
+    </section>
+    <section class="auth-card">
+      <h2>Workspace Login</h2>
+      <p class="muted">使用 Workspace Owner 或后续管理员创建的账户登录。</p>
+      <div id="status" class="status">正在检查 Session…</div>
+      <form id="loginForm" class="hidden">
+        <div class="field"><label>Email</label><input id="email" type="email" class="input" autocomplete="email" required></div>
+        <div class="field"><label>Password</label><input id="password" type="password" class="input" autocomplete="current-password" required></div>
+        <div class="field"><label>Workspace slug · 多工作区同邮箱时填写</label><input id="workspace" class="input" autocomplete="organization" placeholder="可留空"></div>
+        <button id="submitBtn" class="btn" type="submit">登录</button>
+      </form>
+      <div id="signedIn" class="hidden">
+        <button id="openWorkspace" class="btn" type="button">进入工作台</button>
+        <button id="logoutBtn" class="btn" type="button">退出当前 Session</button>
+      </div>
+      <div class="foot"><a href="/setup.html">首次安装？初始化 Workspace Owner</a></div>
+    </section>
+  </main>
+  <script src="/assets/login.js" defer></script>
+</body>
+</html>
