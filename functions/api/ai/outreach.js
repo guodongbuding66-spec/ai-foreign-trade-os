@@ -1,5 +1,6 @@
 import { assertSameOrigin, audit, json, randomId, readJson, requireAuth } from '../../_lib/auth.js';
 import { aiProviderErrorJson, runStructuredAI } from '../../_lib/ai-gateway.js';
+import { aiCredentialsSchemaError, buildUserAIEnv } from '../../_lib/ai-credentials.js';
 
 const draftSchema={type:'object',additionalProperties:false,properties:{subject:{type:'string'},body:{type:'string'},rationale:{type:'string'},personalizationFacts:{type:'array',items:{type:'string'}},callToAction:{type:'string'}},required:['subject','body','rationale','personalizationFacts','callToAction']};
 
@@ -10,6 +11,7 @@ export async function onRequestPost(context){
   const {response,auth}=await requireAuth(context,'ai.outreach.use');if(response)return response;
   const limitError=await enforceDailyLimit(context,auth);if(limitError)return limitError;
   let body;try{body=await readJson(context.request)}catch{return json({ok:false,error:'invalid_json'},400)}
+  let userAI;try{userAI=await buildUserAIEnv(context,auth)}catch(error){const e=aiCredentialsSchemaError(error);return json(e,e.error==='ai_credentials_schema_not_ready'?503:500)}
   const tenantId=auth.tenant.id,ids={leadId:String(body?.leadId||'').trim(),companyId:String(body?.companyId||'').trim(),contactId:String(body?.contactId||'').trim(),productId:String(body?.productId||'').trim()};
   let lead=null,company=null,contact=null,product=null;
   if(ids.leadId)lead=await context.env.DB.prepare('SELECT * FROM leads WHERE id=? AND tenant_id=? LIMIT 1').bind(ids.leadId,tenantId).first();
@@ -25,11 +27,11 @@ export async function onRequestPost(context){
   const contextPayload={prospect,selectedProduct,research,evidence:evidence.slice(-12),purpose,channel,language,tone};
   const prompt=['Create one B2B foreign-trade outreach draft from the supplied context.','Do not invent facts, purchasing history, revenue, volumes, certifications, customer names, or personal details. Personalize only with facts explicitly present in the context. If evidence is thin, write a restrained category-relevance introduction instead of pretending to know more.','Keep the message commercially useful, concise, natural, and easy to reply to. Avoid spammy superlatives and fake urgency. Do not claim an attachment exists unless the context says so.',`Language: ${language}. Tone: ${tone}. Channel: ${channel}. Purpose: ${purpose}.`,`Context: ${JSON.stringify(contextPayload)}`].join('\n\n');
   try{
-    const result=await runStructuredAI(context.env,{task:'draft',providerId:String(body?.providerId||''),maxTokens:1800,schema:draftSchema,system:'You write evidence-grounded B2B export sales outreach. Draft only; never send messages or claim actions were taken.',prompt});
-    const generated=result.data,now=new Date().toISOString(),id=randomId('out'),sourceContext={...contextPayload,rationale:generated.rationale,personalizationFacts:generated.personalizationFacts,callToAction:generated.callToAction};
+    const result=await runStructuredAI(userAI.env,{task:'draft',providerId:String(body?.providerId||''),maxTokens:1800,schema:draftSchema,system:'You write evidence-grounded B2B export sales outreach. Draft only; never send messages or claim actions were taken.',prompt});
+    const generated=result.data,now=new Date().toISOString(),id=randomId('out'),credentialScope=userAI.personalIds.has(result.provider.id)?'personal':'workspace',sourceContext={...contextPayload,rationale:generated.rationale,personalizationFacts:generated.personalizationFacts,callToAction:generated.callToAction,credentialScope};
     await context.env.DB.prepare(`INSERT INTO outreach_drafts(id,tenant_id,company_id,contact_id,product_id,lead_id,channel,purpose,language,tone,subject,body_text,status,provider,model,source_context_json,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,tenantId,ids.companyId||null,ids.contactId||null,ids.productId||null,ids.leadId||null,channel,purpose,language,tone,String(generated.subject||'').slice(0,300),String(generated.body||'').slice(0,12000),'Draft',result.provider.id,result.model,JSON.stringify(sourceContext),auth.user.id,now,now).run();
     const row=await context.env.DB.prepare('SELECT * FROM outreach_drafts WHERE id=? AND tenant_id=? LIMIT 1').bind(id,tenantId).first();const draft={id:row.id,companyId:row.company_id||null,contactId:row.contact_id||null,productId:row.product_id||null,leadId:row.lead_id||null,channel:row.channel,language:row.language,tone:row.tone||'',subject:row.subject||'',body:row.body_text,status:row.status,provider:row.provider,model:row.model,sourceContext,createdAt:row.created_at,updatedAt:row.updated_at};
-    await audit(context,{tenantId,userId:auth.user.id},'ai.outreach.generate','outreach_draft',id,null,{provider:result.provider.id,model:result.model,companyId:ids.companyId||null,leadId:ids.leadId||null,channel,language});
-    return json({ok:true,provider:result.provider.id,providerName:result.provider.name,model:result.model,draft,usage:result.usage||null},201);
+    await audit(context,{tenantId,userId:auth.user.id},'ai.outreach.generate','outreach_draft',id,null,{provider:result.provider.id,model:result.model,credentialScope,companyId:ids.companyId||null,leadId:ids.leadId||null,channel,language});
+    return json({ok:true,provider:result.provider.id,providerName:result.provider.name,credentialScope,model:result.model,draft,usage:result.usage||null},201);
   }catch(error){const e=aiProviderErrorJson(error);return json(e.body,e.status)}
 }
