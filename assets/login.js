@@ -12,12 +12,24 @@
     too_many_attempts: '登录失败次数过多，请稍后重试。',
     session_secret_not_configured: 'SESSION_SECRET 尚未配置。',
     db_not_bound: 'D1 DB 尚未绑定。',
-    invalid_origin: '请求来源校验失败。'
+    invalid_origin: '请求来源校验失败。',
+    login_runtime_error: '登录服务端执行失败。'
   };
 
   function show(text, type = '') {
     status.textContent = text;
     status.className = `status ${type}`.trim();
+  }
+
+  async function responseJson(r) {
+    const type = (r.headers.get('content-type') || '').toLowerCase();
+    const text = await r.text();
+    if (type.includes('application/json')) {
+      try { return JSON.parse(text); }
+      catch (_) { throw new Error(`http_${r.status}_invalid_json`); }
+    }
+    const snippet = text.replace(/\s+/g, ' ').slice(0, 100);
+    throw new Error(`http_${r.status}${snippet ? `: ${snippet}` : ''}`);
   }
 
   async function checkSession() {
@@ -28,13 +40,13 @@
         signedIn.classList.add('hidden');
         return show(new URLSearchParams(location.search).has('created') ? 'Workspace Owner 已创建，请登录。' : '请输入账户信息。');
       }
-      const j = await r.json();
+      const j = await responseJson(r);
       form.classList.add('hidden');
       signedIn.classList.remove('hidden');
       show(`已登录：${j.user.displayName} · ${j.user.email} · ${j.tenant.name}`, 'ok');
-    } catch (_) {
+    } catch (error) {
       form.classList.remove('hidden');
-      show('无法检查 Session，请确认 Production 部署正常。', 'bad');
+      show(`无法检查 Session：${error.message}`, 'bad');
     }
   }
 
@@ -52,13 +64,18 @@
           workspace: $('#workspace').value.trim()
         })
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'login_failed');
+      const j = await responseJson(r);
+      if (!r.ok) {
+        const err = new Error(j.error || `http_${r.status}`);
+        err.detail = j.detail;
+        throw err;
+      }
       $('#password').value = '';
       show(`登录成功：${j.user.displayName}`, 'ok');
       await checkSession();
     } catch (error) {
-      show(messages[error.message] || `登录失败：${error.message}`, 'bad');
+      const base = messages[error.message] || `登录失败：${error.message}`;
+      show(error.detail ? `${base} ${error.detail}` : base, 'bad');
     } finally {
       button.disabled = false;
     }
