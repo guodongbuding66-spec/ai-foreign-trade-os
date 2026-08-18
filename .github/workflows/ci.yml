@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'agent/**']
+    branches: [main, 'agent/**', 'hotfix/**']
   pull_request:
     branches: [main]
 
@@ -12,10 +12,12 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm run check
+      - name: Bundle Cloudflare Pages Functions
+        run: npx --yes wrangler@3.114.17 pages functions build functions --outfile=/tmp/pages-worker.js
