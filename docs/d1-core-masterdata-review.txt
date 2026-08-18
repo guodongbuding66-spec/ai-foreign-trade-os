@@ -1,0 +1,1 @@
+D1 core master-data migration review checkpoint: Company remains validated in production; Contact, Product, SKU/1-set-N-cartons, Quote APIs are tenant-scoped, RBAC-protected and audited. Workspace loader hydrates these entities from D1 before loading the app and synchronizes relation-safe parent/child order.
