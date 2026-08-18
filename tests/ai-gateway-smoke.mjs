@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { aiGatewayStatus, listAIProviders, parseStructuredText, resolveAIProvider } from '../functions/_lib/ai-gateway.js';
 
-const env={ANTHROPIC_API_KEY:'a',DEEPSEEK_API_KEY:'d',DEEPSEEK_MODEL:'deepseek-v4-flash',AI_DEFAULT_PROVIDER:'deepseek',AI_PROVIDER_CONFIG_JSON:JSON.stringify([{id:'custom-qwen',name:'Custom Qwen',protocol:'openai_chat',baseUrl:'https://example.ai/v1',model:'qwen-test',secretEnv:'CUSTOM_QWEN_KEY',capabilities:{webSearch:false}}]),CUSTOM_QWEN_KEY:'q'};
+const env={ANTHROPIC_API_KEY:'a',DEEPSEEK_API_KEY:'d',DEEPSEEK_MODEL:'deepseek-v4-flash',AI_DEFAULT_PROVIDER:'deepseek',AI_RESEARCH_PROVIDER:'anthropic',AI_PROVIDER_CONFIG_JSON:JSON.stringify([{id:'custom-qwen',name:'Custom Qwen',protocol:'openai_chat',baseUrl:'https://example.ai/v1',model:'qwen-test',secretEnv:'CUSTOM_QWEN_KEY',capabilities:{webSearch:false}}]),CUSTOM_QWEN_KEY:'q'};
 const providers=listAIProviders(env);
 assert.ok(providers.find(p=>p.id==='anthropic')?.configured);
 assert.ok(providers.find(p=>p.id==='deepseek')?.configured);
