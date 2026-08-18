@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>初始化工作区 · AI外贸全能工作台</title>
+  <link rel="stylesheet" href="/assets/auth.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-brand">
+      <div class="mark">AI</div>
+      <h1>AI外贸全能工作台</h1>
+      <p>首次初始化会在 D1 中创建 Tenant、Workspace Owner、RBAC Owner Role、密码凭据与审计记录。成功后 Bootstrap 会永久关闭。</p>
+      <ul>
+        <li>✓ D1 tenant isolation foundation</li>
+        <li>✓ PBKDF2-SHA256 password credential</li>
+        <li>✓ HttpOnly secure session</li>
+        <li>✓ Audit trail</li>
+      </ul>
+    </section>
+    <section class="auth-card">
+      <h2>首次管理员初始化</h2>
+      <p class="muted">仅在数据库没有任何 User 时允许执行。Bootstrap Token 只用于这一次初始化。</p>
+      <div id="status" class="status">正在检查服务端配置…</div>
+      <form id="setupForm" class="hidden">
+        <div class="field"><label>Workspace / Company</label><input id="tenantName" class="input" autocomplete="organization" required maxlength="160" placeholder="例如 ISUNOR Foreign Trade"></div>
+        <div class="field"><label>Owner display name</label><input id="displayName" class="input" autocomplete="name" required maxlength="120"></div>
+        <div class="field"><label>Owner email</label><input id="email" type="email" class="input" autocomplete="email" required></div>
+        <div class="field"><label>Password · 至少 12 位</label><input id="password" type="password" class="input" autocomplete="new-password" minlength="12" required></div>
+        <div class="field"><label>BOOTSTRAP_TOKEN</label><input id="bootstrapToken" type="password" class="input" autocomplete="off" required></div>
+        <button id="submitBtn" class="btn" type="submit">创建 Workspace Owner</button>
+      </form>
+      <div class="foot"><a href="/login.html">已有账户？进入登录</a> · <a href="/">返回工作台</a></div>
+    </section>
+  </main>
+  <script src="/assets/setup.js" defer></script>
+</body>
+</html>

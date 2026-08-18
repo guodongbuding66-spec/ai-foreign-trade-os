@@ -3,6 +3,6 @@
   "version": "1.0.0-dev",
   "private": true,
   "scripts": {
-    "check": "node --check assets/app.js && node --check functions/api/health.js && node --check functions/api/runtime.js && node tests/smoke.mjs"
+    "check": "node --check assets/app.js && node --check assets/setup.js && node --check assets/login.js && node --check functions/_lib/auth.js && node --check functions/api/health.js && node --check functions/api/runtime.js && node --check functions/api/db/status.js && node --check functions/api/auth/status.js && node --check functions/api/auth/bootstrap.js && node --check functions/api/auth/login.js && node --check functions/api/auth/logout.js && node --check functions/api/auth/me.js && node tests/smoke.mjs"
   }
 }
