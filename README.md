@@ -19,12 +19,14 @@
 - Automation：本地规则可创建、启停和执行内置动作
 - Pages Functions：`/api/health`、`/api/runtime`
 - Cloudflare Pages SPA 路由与安全响应头
-- D1 核心表初始化迁移草案
+- D1 正式数据库基础 schema：Tenant / User / RBAC / Lead / CRM / Product / SKU / 1套N箱 / Quote / Load Plan / Automation / Document / Audit
+- D1 只读健康检查：`/api/db/status`
 
 尚未宣称完成：
 
 - OpenAI / Apollo / Hunter / Google Places / WhatsApp / DeepL / DHL / FedEx 等真实 Provider
-- 生产级登录、Tenant、RBAC、服务端审计、正式数据库绑定
+- 生产级登录 Session 与完整 RBAC enforcement
+- 浏览器 localStorage 主数据切换到服务端 D1 CRUD
 - 完整 3D WebGL 手工拖拽装柜器
 - 正式 PDF/Excel 单证和装柜报告生成
 
@@ -41,6 +43,34 @@
 - Production branch: `main`
 
 Cloudflare Pages Functions 位于 `functions/`。
+
+`_routes.json` 将 Functions invocation 限制在 `/api/*`，静态页面和资源不经过 Functions。
+
+## Cloudflare D1
+
+正式数据库建议命名：
+
+`ai-foreign-trade-os-production`
+
+Pages Functions 统一使用绑定名：
+
+`DB`
+
+部署步骤见：
+
+`docs/D1_SETUP.md`
+
+迁移顺序：
+
+1. `migrations/0001_init.sql`
+2. `migrations/0002_foundation.sql`
+
+绑定并执行 schema 后，可通过以下只读接口验证：
+
+- `/api/runtime`
+- `/api/db/status`
+
+在 Login / Session / Tenant isolation / RBAC / Audit enforcement 完成前，不开放匿名 D1 写入 API。
 
 ## Validation
 
