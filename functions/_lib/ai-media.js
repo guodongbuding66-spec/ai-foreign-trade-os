@@ -3,10 +3,11 @@ import { documentMediaCapability } from './document-media.js';
 
 const BUILTIN_MEDIA={openai:{vision:true,pdf:true},anthropic:{vision:true,pdf:true},gemini:{vision:true,pdf:true}};
 function customConfigs(env={}){try{const x=JSON.parse(String(env.AI_PROVIDER_CONFIG_JSON||'[]'));return Array.isArray(x)?x:[]}catch{return[]}}
+function customRow(env,id){return customConfigs(env).find(x=>String(x?.id||'').toLowerCase()===String(id||'').toLowerCase())||null}
 function capsFor(env,id){
   if(BUILTIN_MEDIA[id])return BUILTIN_MEDIA[id];
-  const row=customConfigs(env).find(x=>String(x?.id||'').toLowerCase()===String(id||'').toLowerCase()),c=row?.capabilities||{};
-  return{vision:Boolean(c.vision),pdf:Boolean(c.pdf)};
+  const row=customRow(env,id),c=row?.capabilities||{},protocol=String(row?.protocol||'');
+  return{vision:Boolean(c.vision),pdf:protocol==='openai_chat'?false:Boolean(c.pdf)};
 }
 export function mediaProviderSupports(env,providerId,mime){const need=documentMediaCapability(mime),caps=capsFor(env,providerId);return Boolean(need&&caps[need])}
 export function selectMediaProviderId(env={},requestedId='',mime='application/pdf'){
@@ -25,6 +26,7 @@ async function fetchJson(url,options){
   return data;
 }
 function outputOpenAI(data={}){if(typeof data.output_text==='string'&&data.output_text.trim())return data.output_text.trim();const a=[];for(const item of data.output||[])for(const c of item?.content||[])if(c?.type==='output_text'&&typeof c.text==='string')a.push(c.text);return a.join('\n').trim()}
+function outputOpenAIChat(data={}){const c=data?.choices?.[0]?.message?.content;if(typeof c==='string')return c.trim();if(Array.isArray(c))return c.map(x=>x?.text||x?.content||'').join('\n').trim();return''}
 function outputAnthropic(data={}){return(data.content||[]).filter(x=>x?.type==='text').map(x=>x.text||'').join('\n').trim()}
 function outputGemini(data={}){if(typeof data.output_text==='string'&&data.output_text.trim())return data.output_text.trim();const a=[];for(const x of [...(data.outputs||data.output||[]),...(data.steps||[])]){if(typeof x?.text==='string')a.push(x.text);for(const p of x?.content?.parts||[])if(typeof p?.text==='string')a.push(p.text);if(x?.type==='model_output')for(const c of x?.content||[])if(typeof c?.text==='string')a.push(c.text)}return a.join('\n').trim()}
 function usageOf(data={}){return data?.usage||data?.usage_metadata||null}
@@ -32,6 +34,11 @@ async function invokeOpenAI(p,{system,prompt,schema,media,maxTokens}){
   const content=[{type:'input_text',text:`${system}\n\n${prompt}\n\n${schemaInstruction(schema)}`}];
   for(const m of media){if(m.mimeType==='application/pdf')content.push({type:'input_file',filename:m.name,file_data:m.data});else content.push({type:'input_image',image_url:`data:${m.mimeType};base64,${m.data}`,detail:'high'})}
   const data=await fetchJson(`${p.baseUrl}/responses`,{method:'POST',headers:{Authorization:`Bearer ${p.apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:p.model,store:false,input:[{role:'user',content}],max_output_tokens:maxTokens})});return{data,text:outputOpenAI(data),usage:usageOf(data)};
+}
+async function invokeOpenAIChat(p,{system,prompt,schema,media,maxTokens}){
+  if(media.some(m=>m.mimeType==='application/pdf'))throw new AIProviderError(`${p.name} OpenAI Chat adapter does not provide generic PDF compatibility`,400,'ai_provider_media_protocol_unsupported');
+  const content=[{type:'text',text:`${prompt}\n\n${schemaInstruction(schema)}`}];for(const m of media)content.push({type:'image_url',image_url:{url:`data:${m.mimeType};base64,${m.data}`,detail:'high'}});
+  const data=await fetchJson(`${p.baseUrl}/chat/completions`,{method:'POST',headers:{Authorization:`Bearer ${p.apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({model:p.model,max_tokens:maxTokens,messages:[{role:'system',content:system},{role:'user',content}]})});return{data,text:outputOpenAIChat(data),usage:usageOf(data)};
 }
 async function invokeAnthropic(p,{system,prompt,schema,media,maxTokens}){
   const content=[];for(const m of media){if(m.mimeType==='application/pdf')content.push({type:'document',source:{type:'base64',media_type:m.mimeType,data:m.data}});else content.push({type:'image',source:{type:'base64',media_type:m.mimeType,data:m.data}})}content.push({type:'text',text:`${prompt}\n\n${schemaInstruction(schema)}`});
@@ -45,6 +52,7 @@ export async function runStructuredMediaAI(env,{providerId='',system='',prompt='
   if(!Array.isArray(media)||!media.length)throw new AIProviderError('Media input is required',400,'ai_media_required');
   const mime=media[0]?.mimeType||'',id=selectMediaProviderId(env,providerId,mime),p=resolveAIProvider(env,'draft',id);let result;
   if(p.protocol==='openai_responses')result=await invokeOpenAI(p,{system,prompt,schema,media,maxTokens});
+  else if(p.protocol==='openai_chat')result=await invokeOpenAIChat(p,{system,prompt,schema,media,maxTokens});
   else if(p.protocol==='anthropic_messages')result=await invokeAnthropic(p,{system,prompt,schema,media,maxTokens});
   else if(p.protocol==='gemini_interactions')result=await invokeGemini(p,{system,prompt,schema,media,maxTokens});
   else throw new AIProviderError(`${p.name} media protocol is not supported by this adapter`,400,'ai_provider_media_protocol_unsupported');
