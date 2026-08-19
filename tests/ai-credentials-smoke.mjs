@@ -19,7 +19,14 @@ assert.equal(await decryptAIKey(secret,'tenant_1','user_1','deepseek',encrypted.
 await assert.rejects(()=>decryptAIKey(secret,'tenant_1','user_1','openai',encrypted.ciphertext,encrypted.iv));
 
 assert.equal(validateCredentialInput({providerId:'deepseek',apiKey:'12345678',model:'deepseek-test'}).providerId,'deepseek');
-assert.equal(validateCredentialInput({providerId:'custom-qwen',apiKey:'12345678',protocol:'openai_chat',baseUrl:'https://example.ai/v1',model:'qwen-test'}).error,undefined);
+const customChat=validateCredentialInput({providerId:'custom-qwen',apiKey:'12345678',protocol:'openai_chat',baseUrl:'https://example.ai/v1',model:'qwen-test',capabilities:{vision:true,pdf:true,webSearch:true}});
+assert.equal(customChat.error,undefined);
+assert.equal(customChat.capabilities.vision,true);
+assert.equal(customChat.capabilities.pdf,false);
+assert.equal(customChat.capabilities.webSearch,true);
+const customResponses=validateCredentialInput({providerId:'custom-responses',apiKey:'12345678',protocol:'openai_responses',baseUrl:'https://example.ai/v1',model:'vision-model',capabilities:{vision:true,pdf:true,nativeSchema:true}});
+assert.equal(customResponses.capabilities.pdf,true);
+assert.equal(customResponses.capabilities.nativeSchema,true);
 assert.equal(validateCredentialInput({providerId:'custom-bad',apiKey:'12345678',protocol:'openai_chat',baseUrl:'http://insecure.example',model:'x'}).error,'provider_base_url_invalid');
 
-console.log('AI credentials smoke OK: schema v5 + AES-GCM BYOK');
+console.log('AI credentials smoke OK: schema v5 + AES-GCM BYOK + media caps');
