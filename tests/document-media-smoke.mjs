@@ -11,9 +11,13 @@ assert.equal(validateDocumentMedia({name:'huge.pdf',type:'application/pdf',size:
 assert.equal(sniffDocumentMediaMime(Uint8Array.from([0x25,0x50,0x44,0x46,0x2d,0x31])),'application/pdf');
 assert.equal(sniffDocumentMediaMime(Uint8Array.from([0xff,0xd8,0xff,0xdb])),'image/jpeg');
 assert.equal(safeDocumentFileName('../BL:001?.pdf'),'.._BL_001_.pdf');
-const env={OPENAI_API_KEY:'sk-test-key',OPENAI_MODEL:'gpt-5',DEEPSEEK_API_KEY:'ds-test-key',DEEPSEEK_MODEL:'deepseek-chat',AI_DEFAULT_PROVIDER:'deepseek'};
+const env={OPENAI_API_KEY:'sk-test-key',OPENAI_MODEL:'gpt-5',DEEPSEEK_API_KEY:'ds-test-key',DEEPSEEK_MODEL:'deepseek-chat',AI_DEFAULT_PROVIDER:'deepseek',CUSTOM_VISION_KEY:'cv-key-12345678',CUSTOM_PDF_KEY:'cp-key-12345678',AI_PROVIDER_CONFIG_JSON:JSON.stringify([{id:'custom-vision',name:'Custom Vision',protocol:'openai_chat',baseUrl:'https://example.ai/v1',model:'vision-chat',secretEnv:'CUSTOM_VISION_KEY',capabilities:{vision:true,pdf:true}},{id:'custom-pdf',name:'Custom PDF',protocol:'openai_responses',baseUrl:'https://example.ai/v1',model:'pdf-responses',secretEnv:'CUSTOM_PDF_KEY',capabilities:{vision:true,pdf:true}}])};
 assert.equal(mediaProviderSupports(env,'openai','application/pdf'),true);
 assert.equal(mediaProviderSupports(env,'deepseek','application/pdf'),false);
 assert.equal(selectMediaProviderId(env,'','application/pdf'),'openai');
 assert.throws(()=>selectMediaProviderId(env,'deepseek','application/pdf'),/does not expose pdf input/);
+assert.equal(mediaProviderSupports(env,'custom-vision','image/png'),true);
+assert.equal(mediaProviderSupports(env,'custom-vision','application/pdf'),false);
+assert.equal(mediaProviderSupports(env,'custom-pdf','application/pdf'),true);
+assert.equal(selectMediaProviderId(env,'custom-pdf','application/pdf'),'custom-pdf');
 console.log('Document media smoke OK');
