@@ -19,7 +19,7 @@ const indexes=new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='ind
 for(const index of ['idx_lc_revisions_lc_rev','idx_lc_revisions_tenant_created','idx_lc_revisions_source_document'])assert.ok(indexes.has(index),`missing index ${index}`);
 
 // Prove immutable ordered history can coexist for one L/C.
-db.exec("INSERT INTO tenants(id,name,created_at,updated_at) VALUES('t1','T','2026-01-01','2026-01-01')");
+db.exec("INSERT INTO tenants(id,name,slug,created_at,updated_at) VALUES('t1','T','t1','2026-01-01','2026-01-01')");
 db.exec("INSERT INTO letters_of_credit(id,tenant_id,lc_no,status,created_at,updated_at) VALUES('lc1','t1','LC-001','Draft','2026-01-01','2026-01-01')");
 const ins=db.prepare("INSERT INTO lc_revisions(id,tenant_id,letter_of_credit_id,revision_no,source_type,snapshot_json,required_documents_json,created_at) VALUES(?,?,?,?,?,?,?,?)");
 ins.run('r1','t1','lc1',1,'original',JSON.stringify({amount:100,currency:'USD'}),'[]','2026-01-01');
