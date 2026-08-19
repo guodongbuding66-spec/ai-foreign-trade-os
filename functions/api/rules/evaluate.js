@@ -23,13 +23,14 @@ async function loadOrderContext(DB, tenantId, orderId) {
   const packages = await inRows('sku_packages','sku_id',skuIds);
   const shipmentLegs = await inRows('shipment_legs','shipment_id',shipmentIds);
   const letterOfCredit = await DB.prepare('SELECT * FROM letters_of_credit WHERE order_id=? AND tenant_id=? ORDER BY updated_at DESC LIMIT 1').bind(orderId, tenantId).first();
+  const lcRequiredDocuments = letterOfCredit ? await all(DB,'SELECT * FROM lc_required_documents WHERE tenant_id=? AND letter_of_credit_id=? ORDER BY sort_order',[tenantId,letterOfCredit.id]) : [];
   const documentVersions = await all(DB, `
     SELECT dv.*, d.id AS document_id, d.document_type
     FROM documents d JOIN document_versions dv ON dv.document_id=d.id
     WHERE d.order_id=? AND d.tenant_id=? AND dv.tenant_id=?
     ORDER BY d.document_type, dv.version_no DESC
   `,[orderId,tenantId,tenantId]);
-  return {order,orderItems,quote,quoteItems,shipments,loadPlans,loadItems,unloadedItems,packages,shipmentLegs,letterOfCredit,documentVersions};
+  return {order,orderItems,quote,quoteItems,shipments,loadPlans,loadItems,unloadedItems,packages,shipmentLegs,letterOfCredit,lcRequiredDocuments,documentVersions};
 }
 
 async function evaluate(context, orderId, persist) {
