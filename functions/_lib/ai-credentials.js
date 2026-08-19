@@ -46,12 +46,13 @@ export function validateCredentialInput(body={}){
   const providerId=cleanId(body.providerId),apiKey=String(body.apiKey||'').trim(),builtin=BUILTIN[providerId]||null;
   if(!providerId)return {error:'provider_id_required'};
   if(apiKey.length<8||apiKey.length>4096)return {error:'api_key_invalid'};
-  let protocol='',baseUrl='',model=cleanText(body.model,200),providerName=cleanText(body.providerName,100)||providerId,capabilities={webSearch:bool(body?.capabilities?.webSearch,false),nativeSchema:bool(body?.capabilities?.nativeSchema,false)};
+  let protocol='',baseUrl='',model=cleanText(body.model,200),providerName=cleanText(body.providerName,100)||providerId,capabilities={webSearch:bool(body?.capabilities?.webSearch,false),nativeSchema:bool(body?.capabilities?.nativeSchema,false),vision:bool(body?.capabilities?.vision,false),pdf:bool(body?.capabilities?.pdf,false)};
   if(!builtin){
     protocol=cleanText(body.protocol,40);baseUrl=cleanUrl(body.baseUrl);
     if(!PROTOCOLS.has(protocol))return {error:'provider_protocol_invalid'};
     if(!baseUrl)return {error:'provider_base_url_invalid'};
     if(!model)return {error:'provider_model_required'};
+    if(protocol==='openai_chat'&&capabilities.pdf)capabilities.pdf=false;
   }
   return {providerId,apiKey,builtin,protocol,baseUrl,model,providerName,capabilities};
 }
@@ -89,7 +90,7 @@ export async function buildUserAIEnv(context,auth){
     if(builtin){overrides[builtin.keyEnv]=apiKey;if(row.model)overrides[builtin.modelEnv]=row.model;continue}
     const secretEnv=`BYOK_AI_KEY_${i}`;overrides[secretEnv]=apiKey;
     const caps=safeJson(row.capabilities_json,{});
-    custom.push({id:providerId,name:row.provider_name||providerId,protocol:row.protocol||'openai_chat',baseUrl:row.base_url||'',model:row.model||'',secretEnv,capabilities:{webSearch:Boolean(caps.webSearch),nativeSchema:Boolean(caps.nativeSchema)}});
+    custom.push({id:providerId,name:row.provider_name||providerId,protocol:row.protocol||'openai_chat',baseUrl:row.base_url||'',model:row.model||'',secretEnv,capabilities:{webSearch:Boolean(caps.webSearch),nativeSchema:Boolean(caps.nativeSchema),vision:Boolean(caps.vision),pdf:Boolean(caps.pdf)}});
   }
   overrides.AI_PROVIDER_CONFIG_JSON=JSON.stringify(custom.slice(0,40));
   if(prefs.researchProviderId)overrides.AI_RESEARCH_PROVIDER=prefs.researchProviderId;
