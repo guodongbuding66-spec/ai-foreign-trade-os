@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { normalizeLCMediaExtraction } from '../functions/_lib/lc-media.js';
+const out=normalizeLCMediaExtraction({lcNo:' LC-001 ',currency:'usd',amount:'100000.50',partialShipment:'NOT ALLOWED',transshipment:'permitted',requiredDocuments:[{documentType:'Bills of Lading',description:'Full set clean on board ocean bills of lading',originals:3,copies:2,conditionText:'freight prepaid'},{documentType:'Commercial Invoice',description:'signed invoice',originals:1,copies:3,conditionText:''}]});
+assert.equal(out.lcNo,'LC-001');
+assert.equal(out.currency,'USD');
+assert.equal(out.amount,100000.5);
+assert.equal(out.partialShipment,'not allowed');
+assert.equal(out.transshipment,'allowed');
+assert.equal(out.requiredDocuments[0].documentType,'BL');
+assert.equal(out.requiredDocuments[1].documentType,'CI');
+assert.equal(out.requiredDocuments[0].conditions.source,'multimodal-ai');
+console.log('L/C media smoke OK');
