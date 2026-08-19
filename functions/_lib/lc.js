@@ -1,5 +1,5 @@
 const clean=(v,n=2000)=>String(v??'').replace(/\r/g,'').trim().slice(0,n);
-const num=v=>{const x=Number(String(v??'').replace(/,/g,''));return Number.isFinite(x)?x:0};
+const num=v=>{let s=String(v??'').trim();if(s.includes(',')&&!s.includes('.'))s=s.replace(',','.');else s=s.replace(/,/g,'');const x=Number(s);return Number.isFinite(x)?x:0};
 
 function dateYYMMDD(v){const s=clean(v,20).replace(/[^0-9]/g,'');if(s.length!==6)return'';const yy=Number(s.slice(0,2));const year=yy>=70?1900+yy:2000+yy;return `${year}-${s.slice(2,4)}-${s.slice(4,6)}`}
 function normalizeFlag(v){const s=clean(v,80).toLowerCase();if(!s)return'unknown';if(/not allowed|prohibited|no\b|without/.test(s))return'not allowed';if(/allowed|yes\b|permitted/.test(s))return'allowed';return clean(v,80)}
