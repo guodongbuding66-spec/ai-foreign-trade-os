@@ -5,7 +5,7 @@ const dateOnly = v => clean(v) ? clean(v).slice(0, 10) : '';
 
 export const RULE_KEYS = [
   'ORDER-001','ORDER-002','ORDER-003','SHIP-001','SHIP-002','LOAD-001','LOAD-002',
-  'DOC-003','LC-002','LC-004','BL-002','BL-003','BL-004'
+  'DOC-003','LC-001','LC-002','LC-003','LC-004','LC-005','LC-006','LC-007','BL-002','BL-003','BL-004'
 ];
 
 export function safeJson(value, fallback = {}) {
@@ -36,6 +36,20 @@ function latestByType(documents) {
     if (!prior || Number(row.version_no || 0) > Number(prior.version_no || 0)) out.set(type, row);
   }
   return out;
+}
+
+function canonicalDocType(v){
+  const s=clean(v).toUpperCase().replace(/[\s-]+/g,'_');
+  if(['CI','COMMERCIAL_INVOICE','INVOICE'].includes(s))return'CI';
+  if(['PL','PACKING_LIST','PACKING_WEIGHT_LIST','WEIGHT_LIST'].includes(s))return'PL';
+  if(['BL','B_L','BILL_OF_LADING','OCEAN_BILL_OF_LADING'].includes(s))return'BL';
+  if(['AWB','AIR_WAYBILL','AIRWAY_BILL'].includes(s))return'AWB';
+  if(['SEA_WAYBILL','SWB'].includes(s))return'SEA_WAYBILL';
+  if(s.includes('INSURANCE'))return'INSURANCE';
+  if(['COO','CERTIFICATE_OF_ORIGIN','ORIGIN_CERTIFICATE'].includes(s))return'COO';
+  if(s.includes('INSPECTION'))return'INSPECTION';
+  if(s.includes('BENEFICIARY')&&s.includes('CERT'))return'BENEFICIARY_CERT';
+  return s;
 }
 
 function documentData(row) {
@@ -74,6 +88,7 @@ export function evaluateRuleSet(input = {}) {
   const unloadedItems = input.unloadedItems || [];
   const packages = input.packages || [];
   const lc = input.letterOfCredit || null;
+  const lcRequired = input.lcRequiredDocuments || [];
   const legs = input.shipmentLegs || [];
   const docs = latestByType(input.documentVersions || []);
 
@@ -142,12 +157,24 @@ export function evaluateRuleSet(input = {}) {
   compareDocField(issues, docs, ['CI','BL','AWB','SEA_WAYBILL'], ['pod','port_of_discharge','shipping.port_of_discharge'], 'LC-004','High','目的港');
 
   if (lc) {
+    const lcMissing=[];for(const [k,v] of [['lc_no',lc.lc_no],['applicant_name',lc.applicant_name],['beneficiary_name',lc.beneficiary_name],['currency',lc.currency],['amount',n(lc.amount)>0?lc.amount:''],['expiry_date',lc.expiry_date],['latest_shipment_date',lc.latest_shipment_date]])if(!clean(v))lcMissing.push(k);
+    if(lcMissing.length)issues.push(issue('LC-006','High','信用证核心字段不完整，自动审证结果可能不完整。','letters_of_credit',lcMissing,'missing'));
+
+    const commercialDiff={};if(clean(lc.currency)&&clean(order.currency)&&norm(lc.currency)!==norm(order.currency))commercialDiff.currency=[order.currency,lc.currency];if(n(order.amount)>0&&n(lc.amount)>0&&Math.abs(n(order.amount)-n(lc.amount))>0.01)commercialDiff.amount=[n(order.amount),n(lc.amount)];
+    if(Object.keys(commercialDiff).length)issues.push(issue('LC-001','Critical','信用证金额或币种与Order不一致。','letters_of_credit.currency/amount',{currency:order.currency,amount:n(order.amount)},{currency:lc.currency,amount:n(lc.amount)}));
+
     if (norm(lc.partial_shipment) === 'not allowed' || norm(lc.partial_shipment) === 'prohibited' || norm(lc.partial_shipment) === 'no') {
       if (shipments.length > 1) issues.push(issue('LC-002','Critical','信用证禁止分批装运，但该订单存在多个Shipment。','letters_of_credit.partial_shipment','not allowed',shipments.length));
     }
     if (norm(lc.transshipment) === 'not allowed' || norm(lc.transshipment) === 'prohibited' || norm(lc.transshipment) === 'no') {
       if (legs.some(x=>Number(x.transshipment_flag)===1) || legs.length > Math.max(1, shipments.length)) issues.push(issue('LC-002','Critical','信用证禁止转运，但Shipment路线存在转运迹象。','letters_of_credit.transshipment','not allowed','transshipment detected'));
     }
+
+    const latest=Date.parse(dateOnly(lc.latest_shipment_date));const planned=Date.parse(dateOnly(order.promised_etd||order.etd));if(Number.isFinite(latest)&&Number.isFinite(planned)&&planned>latest)issues.push(issue('LC-003','Critical','订单计划ETD晚于信用证最迟装运日。','orders.etd',dateOnly(lc.latest_shipment_date),dateOnly(order.promised_etd||order.etd)));
+    const expiry=Date.parse(dateOnly(lc.expiry_date));if(Number.isFinite(latest)&&Number.isFinite(expiry)&&expiry<latest)issues.push(issue('LC-003','Critical','信用证到期日早于最迟装运日，时间条件存在明显冲突。','letters_of_credit.expiry_date',`>= ${dateOnly(lc.latest_shipment_date)}`,dateOnly(lc.expiry_date)));
+    for(const s of shipments){const actual=Date.parse(dateOnly(s.actual_on_board_at||s.etd));if(Number.isFinite(latest)&&Number.isFinite(actual)&&actual>latest)issues.push(issue('LC-007','Critical',`Shipment ${clean(s.shipment_no)} 的装船/ETD晚于信用证最迟装运日。`,'shipments.actual_on_board_at',dateOnly(lc.latest_shipment_date),dateOnly(s.actual_on_board_at||s.etd)))}
+
+    if(lcRequired.length){const existing=new Set([...docs.keys()].map(canonicalDocType));const missingDocs=[];for(const r of lcRequired){const t=canonicalDocType(r.document_type);if(t&&t!=='OTHER'&&!existing.has(t))missingDocs.push({type:t,description:r.description||''})}if(missingDocs.length)issues.push(issue('LC-005','High','信用证要求的部分单据尚未在Document Center中形成有效版本。','lc_required_documents',missingDocs,[...existing]));}
   }
 
   const bl = docs.get('BL');
