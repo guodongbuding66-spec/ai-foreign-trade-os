@@ -8,6 +8,7 @@
   <title>AI Foreign Trade OS · AI外贸全能工作台</title>
   <meta name="description" content="AI外贸全能工作台 V1.0" />
   <link rel="stylesheet" href="/assets/app.css" />
+  <link rel="stylesheet" href="/assets/ecosystem-nav.css" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -23,7 +24,18 @@
       <header class="topbar">
         <button class="icon-btn mobile-only" id="menuToggle" aria-label="切换菜单">☰</button>
         <div class="global-search-wrap"><input id="globalSearch" class="global-search" placeholder="搜索 Company / Contact / Product / SKU / Quote / Order…" autocomplete="off" /><kbd>Ctrl K</kbd><div id="searchResults" class="search-results hidden"></div></div>
-        <div class="top-actions"><button class="btn secondary" id="createBtn">＋ Create</button><button class="btn primary" id="aiBtn">✦ AI</button><button class="icon-btn" id="notifyBtn" title="Notifications">●</button><button class="avatar" id="userBtn" title="Workspace">GD</button></div>
+        <div class="top-actions">
+          <details class="ecosystem-menu">
+            <summary aria-label="打开其他工具"><span aria-hidden="true">↗</span><span class="ecosystem-label">其他工具</span></summary>
+            <div class="ecosystem-popover">
+              <div class="ecosystem-title">Galaxy 工具生态</div>
+              <a class="ecosystem-link" href="https://container-load-planner.pages.dev/" target="_blank" rel="noopener noreferrer"><span class="ecosystem-icon">▣</span><span><strong>外贸装柜智算</strong><small>现场易执行 / 极限理论双轨装柜与 3D 指导</small></span><span class="ecosystem-open">↗</span></a>
+              <a class="ecosystem-link" href="https://isunor-industry-daily.pages.dev/" target="_blank" rel="noopener noreferrer"><span class="ecosystem-icon">◎</span><span><strong>iSUNOR 决策级情报</strong><small>行业日报、竞品、贸易政策与业务机会情报</small></span><span class="ecosystem-open">↗</span></a>
+              <a class="ecosystem-link" href="https://github.com/guodongbuding66-spec/galaxy-downloader" target="_blank" rel="noopener noreferrer"><span class="ecosystem-icon">↓</span><span><strong>Galaxy Downloader</strong><small>全能媒体下载器项目主页与最新版入口</small></span><span class="ecosystem-open">↗</span></a>
+            </div>
+          </details>
+          <button class="btn secondary" id="createBtn">＋ Create</button><button class="btn primary" id="aiBtn">✦ AI</button><button class="icon-btn" id="notifyBtn" title="Notifications">●</button><button class="avatar" id="userBtn" title="Workspace">GD</button>
+        </div>
       </header>
       <section id="content" class="content" aria-live="polite"><div class="card"><h2>Loading workspace…</h2><div class="notice info">正在验证 Session 并同步 D1 主数据。</div></div></section>
     </main>
