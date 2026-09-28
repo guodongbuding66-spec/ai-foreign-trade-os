@@ -8,6 +8,7 @@ const css = fs.readFileSync(path.join(root, 'assets/ecosystem-nav.css'), 'utf8')
 const expected = [
   'https://container-load-planner.pages.dev/',
   'https://isunor-industry-daily.pages.dev/',
+  'https://soutu-pro.vercel.app/',
   'https://github.com/guodongbuding66-spec/galaxy-downloader',
 ];
 
